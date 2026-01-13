@@ -98,7 +98,7 @@ export default function App() {
         <div className="max-w-xl mx-auto p-4 space-y-8 mt-4">
           {Array.from({ length: 14 }, (_, i) => `p${i + 1}`).map(key => {
             const pageNumber = parseInt(key.substring(1));
-            const pageData = reportData[key] || { month: pageNumber, top: '', img: '', bottom: '' };
+            const pageData = reportData[key] || { top: '', img: '', bottom: '' };
             const isTextPage = pageData.type === 'text';
 
             return (
@@ -109,7 +109,7 @@ export default function App() {
                     onClick={() => {
                       setReportData(prev => ({
                         ...prev!,
-                        [key]: isTextPage ? { month: parseInt(key.substring(1)), top: '', img: '', bottom: '' } : { type: 'text', content: '' }
+                        [key]: isTextPage ? { top: '', img: '', bottom: '' } : { type: 'text', content: '' }
                       }));
                     }}
                     className="text-[11px] text-blue-500 hover:text-blue-600"
@@ -128,17 +128,6 @@ export default function App() {
                     />
                   ) : (
                     <div className="divide-y divide-black/5">
-                      <div className="flex p-4 items-center">
-                        <span className="w-20 text-[14px] text-gray-400">月份</span>
-                        <input
-                          type="number"
-                          min="1"
-                          max="12"
-                          className="flex-1 outline-none bg-transparent"
-                          value={pageData.month || ''}
-                          onChange={e => setReportData(prev => ({...prev!, [key]: {...pageData, month: parseInt(e.target.value) || 1}}))}
-                        />
-                      </div>
                       <div className="flex p-4 items-center">
                         <span className="w-20 text-[14px] text-gray-400">标题</span>
                         <input
@@ -224,7 +213,10 @@ export default function App() {
           className="absolute inset-0"
         >
           <NarrativeCard
-            data={reportData[`p${currentPage + 1}`] || {}}
+            data={{
+              ...(reportData[`p${currentPage + 1}`] || {}),
+              month: currentPage // p2=1月, p3=2月, ..., p13=12月
+            }}
           />
         </motion.div>
       </AnimatePresence>

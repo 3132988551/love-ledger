@@ -8,10 +8,13 @@ let SQL: any = null;
 let db: Database | null = null;
 
 // 默认数据
+// p1: 开头文本页
+// p2-p13: 1-12月图片页
+// p14: 总结文本页
 const defaultData = {
   p1: { type: 'text', content: '2024\nOur Memories' },
-  p2: { month: 4, top: '微风练习曲', img: 'https://images.unsplash.com/photo-1522748906645-95d8adfd52c7?w=1000', bottom: '在草地上睡个午觉吧。万物复苏的时候,我们也在一起。微风拂过发梢,那一刻的时间仿佛凝固了。' },
-  p3: { month: 5, top: '初夏的告白', img: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1000', bottom: '冰汽水里的气泡。' },
+  p2: { top: '微风练习曲', img: 'https://images.unsplash.com/photo-1522748906645-95d8adfd52c7?w=1000', bottom: '在草地上睡个午觉吧。万物复苏的时候,我们也在一起。微风拂过发梢,那一刻的时间仿佛凝固了。' },
+  p3: { top: '初夏的告白', img: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1000', bottom: '冰汽水里的气泡。' },
   p14: { type: 'text', content: 'Loved Always\nBy You' },
 };
 

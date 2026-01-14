@@ -198,11 +198,24 @@ export default function App() {
 
   return (
     <div
-      className="h-screen w-full relative touch-none overflow-hidden select-none bg-white font-sans"
+      className="h-screen w-full relative touch-none overflow-hidden select-none font-sans flex justify-center"
+      style={{
+        backgroundColor: '#ffeded'
+      }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       onWheel={handleWheel}
     >
+      {/* 背景图片容器 - 底部对齐，无缝融合 */}
+      <div
+        className="absolute inset-0 max-w-[430px] mx-auto"
+        style={{
+          backgroundImage: 'url(/labubu.jpg)',
+          backgroundSize: '100% auto',
+          backgroundPosition: 'bottom center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      />
       <AnimatePresence mode="wait">
         <motion.div
           key={currentPage}

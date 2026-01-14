@@ -6,17 +6,15 @@ interface SquircleCardProps {
 }
 
 /**
- * iOS Continuous Corner (Squircle) 容器
- * 模拟 iOS 17+ 的卡片边缘物理逻辑
+ * LABUBU 卡通可爱卡片容器
+ * Polaroid 风格 + 漫画硬阴影
  */
 export const SquircleCard: React.FC<SquircleCardProps> = ({ children, className = "" }) => (
   <div
-    className={`relative overflow-hidden transition-shadow duration-700 ${className}`}
+    className={`relative overflow-hidden transition-all duration-500 hard-shadow ${className}`}
     style={{
-      borderRadius: '44px', // iOS 标准大卡片圆角
-      WebkitMaskImage: '-webkit-radial-gradient(white, black)', // 强制抗锯齿
-      boxShadow: '0 12px 34px -10px rgba(0, 0, 0, 0.12), 0 4px 12px -4px rgba(0, 0, 0, 0.05)',
-      border: '0.5px solid rgba(0, 0, 0, 0.04)' // 极细描边
+      borderRadius: '28px',
+      border: '3px solid #634343'
     }}
   >
     {children}

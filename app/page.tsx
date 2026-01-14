@@ -15,6 +15,7 @@ export default function App() {
   const [savedPages, setSavedPages] = useState<Record<string, boolean>>({});
   const isScrolling = useRef(false);
   const touchYRef = useRef(0);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const totalPages = 14;
 
   // 加载数据
@@ -37,21 +38,66 @@ export default function App() {
   const goToNextPage = () => setCurrentPage(p => Math.min(p + 1, totalPages - 1));
   const goToPrevPage = () => setCurrentPage(p => Math.max(p - 1, 0));
 
+  // 检查是否在滚动边界
+  const isAtScrollBoundary = (direction: 'up' | 'down') => {
+    const container = scrollContainerRef.current;
+    if (!container) return true; // 如果没有容器，允许翻页
+
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    const threshold = 5; // 5px 容差
+
+    if (direction === 'up') {
+      return scrollTop <= threshold; // 在顶部
+    } else {
+      return scrollTop + clientHeight >= scrollHeight - threshold; // 在底部
+    }
+  };
+
   const handleTouchStart = (e: React.TouchEvent) => {
     touchYRef.current = e.touches[0].clientY;
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     const diff = touchYRef.current - e.changedTouches[0].clientY;
-    if (Math.abs(diff) > 50) diff > 0 ? goToNextPage() : goToPrevPage();
+    const swipeThreshold = 50;
+
+    if (Math.abs(diff) > swipeThreshold) {
+      if (diff > 0) {
+        // 向上滑动 - 尝试下一页
+        if (isAtScrollBoundary('down')) {
+          goToNextPage();
+        }
+      } else {
+        // 向下滑动 - 尝试上一页
+        if (isAtScrollBoundary('up')) {
+          goToPrevPage();
+        }
+      }
+    }
   };
 
   const handleWheel = (e: React.WheelEvent) => {
     if (isScrolling.current) return;
-    if (Math.abs(e.deltaY) > 30) {
-      isScrolling.current = true;
-      e.deltaY > 0 ? goToNextPage() : goToPrevPage();
-      setTimeout(() => { isScrolling.current = false; }, 1200);
+
+    const scrollThreshold = 30;
+    if (Math.abs(e.deltaY) > scrollThreshold) {
+      if (e.deltaY > 0) {
+        // 向下滚动 - 尝试下一页
+        if (isAtScrollBoundary('down')) {
+          e.preventDefault();
+          isScrolling.current = true;
+          goToNextPage();
+          setTimeout(() => { isScrolling.current = false; }, 1200);
+        }
+      } else {
+        // 向上滚动 - 尝试上一页
+        if (isAtScrollBoundary('up')) {
+          e.preventDefault();
+          isScrolling.current = true;
+          goToPrevPage();
+          setTimeout(() => { isScrolling.current = false; }, 1200);
+        }
+      }
     }
   };
 
@@ -241,7 +287,8 @@ export default function App() {
 
   return (
     <div
-      className="h-screen w-full relative touch-none overflow-hidden select-none font-sans flex justify-center"
+      ref={scrollContainerRef}
+      className="h-screen w-full relative overflow-y-auto select-none font-sans flex justify-center"
       style={{
         backgroundColor: '#ffeded'
       }}

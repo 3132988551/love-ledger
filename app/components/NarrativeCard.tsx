@@ -157,7 +157,7 @@ export const NarrativeCard: React.FC<NarrativeCardProps> = ({ data }) => {
         <div className="absolute bottom-[27vh] left-0 right-0 flex flex-col items-center pointer-events-none">
           <div className="flex flex-col items-center gap-3">
             <p className="text-[12px] tracking-[0.3em] font-extrabold uppercase title-glow" style={{ color: '#C71585' }}>
-              Memories of 2024
+              Memories of 2025
             </p>
             <motion.div
               animate={!isReducedMotion ? { y: [0, 8, 0] } : {}}

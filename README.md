@@ -54,7 +54,7 @@ pnpm build
 pnpm start
 ```
 
-应用将在 http://localhost:3333 运行。
+应用将在 http://localhost:3338 运行。
 
 ## 项目结构
 
@@ -99,7 +99,7 @@ love-ledger/
 ```json
 {
   "type": "text",
-  "content": "2024\nOur Memories"
+  "content": "2025\nOur Memories"
 }
 ```
 

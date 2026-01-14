@@ -11,7 +11,8 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState(0);
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+  const [savingPages, setSavingPages] = useState<Record<string, boolean>>({});
+  const [savedPages, setSavedPages] = useState<Record<string, boolean>>({});
   const isScrolling = useRef(false);
   const touchYRef = useRef(0);
   const totalPages = 14;
@@ -66,65 +67,67 @@ export default function App() {
   if (view === 'admin') {
     return (
       <div className="min-h-screen bg-[#F2F2F7] pb-24 font-sans text-black">
-        <div className="bg-white/80 backdrop-blur-xl p-4 sticky top-0 z-50 flex justify-between items-center border-b-[0.5px] border-black/10">
+        <div className="bg-white/80 backdrop-blur-xl p-4 sticky top-0 z-50 border-b-[0.5px] border-black/10">
           <h1 className="text-lg font-semibold tracking-tight">叙事设置</h1>
-          <div className="flex gap-4">
-            <button onClick={() => setView('report')} className="text-blue-500 font-medium">预览</button>
-            <button
-              onClick={async () => {
-                setIsSaving(true);
-                try {
-                  await fetch('/api/data', {
-                    method: 'PUT',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'x-admin-password': password,
-                    },
-                    body: JSON.stringify(reportData),
-                  });
-                } catch (err) {
-                  console.error('Failed to save:', err);
-                } finally {
-                  setIsSaving(false);
-                }
-              }}
-              className="text-blue-500 font-bold disabled:opacity-30"
-            >
-              {isSaving ? "存储中..." : "保存"}
-            </button>
-          </div>
         </div>
 
         <div className="max-w-xl mx-auto p-4 space-y-8 mt-4">
           {Array.from({ length: 14 }, (_, i) => `p${i + 1}`).map(key => {
             const pageNumber = parseInt(key.substring(1));
-            const pageData = reportData[key] || { top: '', img: '', bottom: '' };
-            const isTextPage = pageData.type === 'text';
+            const pageData = reportData[key] || { top: '', img: '', bottom: '', content: '' };
+            const isTextOnlyPage = pageNumber === 1 || pageNumber === 14;
 
             return (
               <div key={key} className="space-y-2">
                 <div className="px-4 text-[13px] text-gray-500 uppercase tracking-tight flex items-center justify-between">
-                  <span>Page {key.substring(1)}</span>
+                  <span>Page {key.substring(1)} {isTextOnlyPage ? '(纯文本页)' : '(图文页)'}</span>
                   <button
-                    onClick={() => {
-                      setReportData(prev => ({
-                        ...prev!,
-                        [key]: isTextPage ? { top: '', img: '', bottom: '' } : { type: 'text', content: '' }
-                      }));
+                    onClick={async () => {
+                      setSavingPages(prev => ({ ...prev, [key]: true }));
+                      setSavedPages(prev => ({ ...prev, [key]: false }));
+
+                      try {
+                        // 添加最小延迟确保用户能看到"保存中..."状态
+                        const [response] = await Promise.all([
+                          fetch('/api/data', {
+                            method: 'PUT',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'x-admin-password': password,
+                            },
+                            body: JSON.stringify({ [key]: pageData }),
+                          }),
+                          new Promise(resolve => setTimeout(resolve, 600))
+                        ]);
+
+                        if (response.ok) {
+                          setSavedPages(prev => ({ ...prev, [key]: true }));
+                          // 2秒后隐藏成功提示
+                          setTimeout(() => {
+                            setSavedPages(prev => ({ ...prev, [key]: false }));
+                          }, 2000);
+                        }
+                      } catch (err) {
+                        console.error('Failed to save:', err);
+                      } finally {
+                        setSavingPages(prev => ({ ...prev, [key]: false }));
+                      }
                     }}
-                    className="text-[11px] text-blue-500 hover:text-blue-600"
+                    disabled={savingPages[key]}
+                    className={`px-3 py-1 text-white text-[11px] rounded-lg transition-colors disabled:opacity-50 ${savedPages[key] ? 'bg-green-500' : 'bg-blue-500 hover:bg-blue-600'
+                      }`}
                   >
-                    {isTextPage ? '切换为图片页' : '切换为文本页'}
+                    {savingPages[key] ? '保存中...' : savedPages[key] ? '已保存 ✓' : '保存'}
                   </button>
                 </div>
                 <div className="bg-white rounded-xl overflow-hidden border-[0.5px] border-black/5">
-                  {isTextPage ? (
+                  {isTextOnlyPage ? (
                     <textarea
                       className="w-full p-4 outline-none text-[16px] bg-transparent"
-                      rows={3}
+                      rows={5}
                       placeholder="输入文本内容..."
                       value={pageData.content || ''}
-                      onChange={e => setReportData(prev => ({...prev!, [key]: {...pageData, content: e.target.value}}))}
+                      onChange={e => setReportData(prev => ({ ...prev!, [key]: { ...pageData, content: e.target.value } }))}
                     />
                   ) : (
                     <div className="divide-y divide-black/5">
@@ -134,17 +137,57 @@ export default function App() {
                           className="flex-1 outline-none bg-transparent"
                           placeholder="输入标题..."
                           value={pageData.top || ''}
-                          onChange={e => setReportData(prev => ({...prev!, [key]: {...pageData, top: e.target.value}}))}
+                          onChange={e => setReportData(prev => ({ ...prev!, [key]: { ...pageData, top: e.target.value } }))}
                         />
                       </div>
-                      <div className="flex p-4 items-center">
-                        <span className="w-20 text-[14px] text-gray-400">图片</span>
-                        <input
-                          className="flex-1 outline-none text-xs text-blue-400 bg-transparent"
-                          placeholder="输入图片URL..."
-                          value={pageData.img || ''}
-                          onChange={e => setReportData(prev => ({...prev!, [key]: {...pageData, img: e.target.value}}))}
-                        />
+                      <div className="p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[14px] text-gray-400">图片</span>
+                          <label className="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg cursor-pointer hover:bg-blue-600 transition-colors">
+                            上传图片
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+
+                                const formData = new FormData();
+                                formData.append('file', file);
+                                formData.append('pageId', key);
+
+                                try {
+                                  const response = await fetch('/api/upload', {
+                                    method: 'POST',
+                                    headers: {
+                                      'x-admin-password': password,
+                                    },
+                                    body: formData,
+                                  });
+
+                                  const result = await response.json();
+                                  if (result.url) {
+                                    // 添加时间戳参数强制刷新图片缓存
+                                    const urlWithTimestamp = `${result.url}?t=${Date.now()}`;
+                                    setReportData(prev => ({ ...prev!, [key]: { ...pageData, img: urlWithTimestamp } }));
+                                  }
+                                } catch (err) {
+                                  console.error('Upload failed:', err);
+                                }
+                              }}
+                            />
+                          </label>
+                        </div>
+                        {pageData.img && (
+                          <div className="mt-2 relative">
+                            <img
+                              src={pageData.img}
+                              alt="预览"
+                              className="w-full h-48 object-cover rounded-lg"
+                            />
+                          </div>
+                        )}
                       </div>
                       <div className="p-4 flex flex-col">
                         <span className="text-[14px] text-gray-400 mb-2">叙述</span>
@@ -153,7 +196,7 @@ export default function App() {
                           rows={3}
                           placeholder="输入叙述文字..."
                           value={pageData.bottom || ''}
-                          onChange={e => setReportData(prev => ({...prev!, [key]: {...pageData, bottom: e.target.value}}))}
+                          onChange={e => setReportData(prev => ({ ...prev!, [key]: { ...pageData, bottom: e.target.value } }))}
                         />
                       </div>
                     </div>
@@ -184,8 +227,8 @@ export default function App() {
           />
           <button
             onClick={() => {
-              const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || '2024';
-              if(password === adminPassword) setView('admin');
+              const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || '2025';
+              if (password === adminPassword) setView('admin');
             }}
             className="w-full bg-blue-500 text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-transform"
           >
@@ -235,9 +278,9 @@ export default function App() {
       </AnimatePresence>
 
       <div className="absolute top-10 left-6 z-30">
-         <button onClick={() => setView('login')} className="p-4 opacity-0 hover:opacity-100 text-gray-300 transition-opacity">
-            <Edit3 size={14} />
-         </button>
+        <button onClick={() => setView('login')} className="p-4 opacity-0 hover:opacity-100 text-gray-300 transition-opacity">
+          <Edit3 size={14} />
+        </button>
       </div>
     </div>
   );

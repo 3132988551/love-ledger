@@ -31,7 +31,7 @@ export async function PUT(request: NextRequest) {
 
     // 验证管理员密码
     const password = request.headers.get('x-admin-password');
-    const adminPassword = process.env.ADMIN_PASSWORD || '2024';
+    const adminPassword = process.env.ADMIN_PASSWORD || '2025';
 
     if (password !== adminPassword) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

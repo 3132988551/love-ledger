@@ -43,4 +43,10 @@ data.db-journal
 
 tmpclaude*
 .claude
-public/img
+
+# 忽略上传的图片，但保留目录结构
+public/img/*
+!public/img/.gitkeep
+
+# 环境变量文件（敏感信息）
+.env.local

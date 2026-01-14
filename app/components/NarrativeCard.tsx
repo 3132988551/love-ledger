@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Heart, ChevronUp, Calendar } from 'lucide-react';
 import { SquircleCard } from './SquircleCard';
@@ -44,11 +44,23 @@ export const NarrativeCard: React.FC<NarrativeCardProps> = ({ data }) => {
   const isReducedMotion = useReducedMotion();
   const theme = SYSTEM_THEMES[data.month as keyof typeof SYSTEM_THEMES] || SYSTEM_THEMES[1];
   const isTextPage = data.type === 'text';
+  const [isLandscape, setIsLandscape] = useState(false);
 
   // 根据月份选择装饰元素
   const deco1 = DECORATIONS[(data.month || 0) % DECORATIONS.length];
   const deco2 = DECORATIONS[((data.month || 0) + 3) % DECORATIONS.length];
   const deco3 = DECORATIONS[((data.month || 0) + 5) % DECORATIONS.length];
+
+  // 检测图片是否为横向
+  useEffect(() => {
+    if (data.img) {
+      const img = new Image();
+      img.onload = () => {
+        setIsLandscape(img.width > img.height);
+      };
+      img.src = data.img;
+    }
+  }, [data.img]);
 
   return (
     <div className="relative w-full h-full flex flex-col items-center transition-colors duration-1000 select-none pt-8 pb-[25vh] overflow-hidden">
@@ -57,6 +69,7 @@ export const NarrativeCard: React.FC<NarrativeCardProps> = ({ data }) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 400, damping: 15 }}
         className="w-full max-w-[430px] flex flex-col items-center z-10 px-8"
+        style={{ gap: '20px' }}
       >
         {isTextPage ? (
           <div className="text-center space-y-6 py-40 relative">
@@ -84,7 +97,7 @@ export const NarrativeCard: React.FC<NarrativeCardProps> = ({ data }) => {
           <>
             {/* 1. 标题区域 - 移到最上方 */}
             <motion.div
-              className="relative z-20 mb-6 w-full"
+              className="relative z-20 w-full"
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: "spring", stiffness: 400, damping: 15, delay: 0.1 }}
@@ -107,16 +120,17 @@ export const NarrativeCard: React.FC<NarrativeCardProps> = ({ data }) => {
 
             {/* 2. 主图卡片 - Polaroid 风格 */}
             <motion.div
-              className="relative w-full flex-shrink-0 mb-8"
+              className="relative w-full flex-shrink-0"
               initial={{ scale: 0.8, opacity: 0, rotate: -2 }}
               animate={{ scale: 1, opacity: 1, rotate: 0 }}
               transition={{ type: "spring", stiffness: 400, damping: 15, delay: 0.2 }}
             >
-              <SquircleCard className="w-full aspect-[4/5] bg-[#FFF9F5]">
+              <SquircleCard className="w-full" isLandscape={isLandscape}>
                 <motion.img
                   src={data.img}
                   alt={data.top}
-                  className="w-full h-full object-cover"
+                  className="w-full object-contain"
+                  style={{ height: 'auto', maxHeight: '65vh' }}
                   animate={!isReducedMotion ? { scale: [1, 1.02, 1] } : {}}
                   transition={{ repeat: Infinity, duration: 6, ease: "easeInOut", type: "spring", stiffness: 100 }}
                 />

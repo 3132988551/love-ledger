@@ -19,14 +19,15 @@ const defaultData = {
 };
 
 // 初始化数据库
-async function initDatabase() {
+async function initDatabase(): Promise<Database> {
   if (db) return db;
 
   // 初始化 sql.js
   if (!SQL) {
-    const wasmBinary = fs.readFileSync(
+    const buffer = fs.readFileSync(
       path.join(process.cwd(), 'node_modules/sql.js/dist/sql-wasm.wasm')
     );
+    const wasmBinary = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
     SQL = await initSqlJs({ wasmBinary });
   }
 
@@ -35,10 +36,11 @@ async function initDatabase() {
     const buffer = fs.readFileSync(dbPath);
     db = new SQL.Database(buffer);
   } else {
-    db = new SQL.Database();
+    const newDb = new SQL.Database();
+    db = newDb;
 
     // 创建表
-    db.run(`
+    newDb.run(`
       CREATE TABLE IF NOT EXISTS pages (
         id TEXT PRIMARY KEY,
         data TEXT NOT NULL,
@@ -47,7 +49,7 @@ async function initDatabase() {
     `);
 
     // 插入默认数据
-    const stmt = db.prepare('INSERT INTO pages (id, data) VALUES (?, ?)');
+    const stmt = newDb.prepare('INSERT INTO pages (id, data) VALUES (?, ?)');
     for (const [key, value] of Object.entries(defaultData)) {
       stmt.run([key, JSON.stringify(value)]);
     }
@@ -57,7 +59,7 @@ async function initDatabase() {
     saveDatabase();
   }
 
-  return db;
+  return db!;
 }
 
 // 保存数据库到文件

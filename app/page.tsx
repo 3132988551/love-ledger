@@ -296,9 +296,9 @@ export default function App() {
       onTouchEnd={handleTouchEnd}
       onWheel={handleWheel}
     >
-      {/* 背景图片容器 - 底部对齐，无缝融合 */}
+      {/* 背景图片容器 - 固定在视口底部 */}
       <div
-        className="absolute inset-0 max-w-[430px] mx-auto"
+        className="fixed inset-x-0 bottom-0 h-screen max-w-[430px] mx-auto pointer-events-none"
         style={{
           backgroundImage: 'url(/labubu.jpg)',
           backgroundSize: '100% auto',
@@ -313,7 +313,7 @@ export default function App() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.9, ease: "easeInOut" }}
-          className="absolute inset-0"
+          className="w-full min-h-full"
         >
           <NarrativeCard
             data={{

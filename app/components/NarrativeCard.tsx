@@ -63,7 +63,7 @@ export const NarrativeCard: React.FC<NarrativeCardProps> = ({ data }) => {
   }, [data.img]);
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center transition-colors duration-1000 select-none pt-8 pb-[25vh] overflow-hidden">
+    <div className="relative w-full min-h-full flex flex-col items-center transition-colors duration-1000 select-none pt-8 pb-[25vh]">
       <motion.div
         initial={{ opacity: 0, y: isReducedMotion ? 0 : 30 }}
         animate={{ opacity: 1, y: 0 }}

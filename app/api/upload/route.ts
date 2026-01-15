@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
+import { writeFile, readdir, unlink } from 'fs/promises';
 import { join } from 'path';
 
 export async function POST(request: NextRequest) {
@@ -28,12 +28,34 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // 保存到 public/img 文件夹
-    const filePath = join(process.cwd(), 'public', 'img', fileName);
+    const imgDir = join(process.cwd(), 'public', 'img');
+
+    // 删除该 pageId 的所有旧图片（不管什么扩展名）
+    try {
+      const existingFiles = await readdir(imgDir);
+      const oldFiles = existingFiles.filter(f => {
+        // 匹配 pageId.* 格式的文件（例如 p4.jpg, p4.png）
+        const regex = new RegExp(`^${pageId}\\.`);
+        return regex.test(f);
+      });
+
+      // 删除所有旧文件
+      for (const oldFile of oldFiles) {
+        const oldFilePath = join(imgDir, oldFile);
+        await unlink(oldFilePath);
+        console.log(`Deleted old image: ${oldFile}`);
+      }
+    } catch (err) {
+      console.warn('Failed to delete old images:', err);
+      // 继续执行，不阻止上传
+    }
+
+    // 保存新图片到 public/img 文件夹
+    const filePath = join(imgDir, fileName);
     await writeFile(filePath, buffer);
 
-    // 返回图片URL
-    const imageUrl = `/img/${fileName}`;
+    // 返回新的图片URL（使用动态API路径）
+    const imageUrl = `/api/images/${fileName}`;
 
     return NextResponse.json({ url: imageUrl, success: true });
   } catch (error) {

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Lock, Edit3 } from 'lucide-react';
 import { NarrativeCard } from './components/NarrativeCard';
+import imageCompression from 'browser-image-compression';
 
 export default function App() {
   const [view, setView] = useState('report');
@@ -13,6 +14,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [savingPages, setSavingPages] = useState<Record<string, boolean>>({});
   const [savedPages, setSavedPages] = useState<Record<string, boolean>>({});
+  const [uploadProgress, setUploadProgress] = useState<Record<string, { progress: number; originalSize: number; compressedSize: number } | null>>({});
   const isScrolling = useRef(false);
   const touchYRef = useRef(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -227,11 +229,42 @@ export default function App() {
                                 const file = e.target.files?.[0];
                                 if (!file) return;
 
-                                const formData = new FormData();
-                                formData.append('file', file);
-                                formData.append('pageId', key);
+                                const originalSize = file.size;
 
                                 try {
+                                  // 初始化进度：压缩阶段
+                                  setUploadProgress(prev => ({
+                                    ...prev,
+                                    [key]: { progress: 10, originalSize, compressedSize: 0 }
+                                  }));
+
+                                  // 压缩图片
+                                  const options = {
+                                    maxSizeMB: 1,          // 最大文件大小 1MB
+                                    maxWidthOrHeight: 1920, // 最大宽度或高度
+                                    useWebWorker: true,     // 使用 Web Worker 提升性能
+                                    fileType: 'image/jpeg', // 统一输出为 JPEG
+                                  };
+
+                                  const compressedFile = await imageCompression(file, options);
+                                  const compressedSize = compressedFile.size;
+
+                                  // 压缩完成，准备上传
+                                  setUploadProgress(prev => ({
+                                    ...prev,
+                                    [key]: { progress: 50, originalSize, compressedSize }
+                                  }));
+
+                                  const formData = new FormData();
+                                  formData.append('file', compressedFile);
+                                  formData.append('pageId', key);
+
+                                  // 上传中
+                                  setUploadProgress(prev => ({
+                                    ...prev,
+                                    [key]: { progress: 75, originalSize, compressedSize }
+                                  }));
+
                                   const response = await fetch('/api/upload', {
                                     method: 'POST',
                                     headers: {
@@ -242,17 +275,51 @@ export default function App() {
 
                                   const result = await response.json();
                                   if (result.url) {
+                                    // 上传完成
+                                    setUploadProgress(prev => ({
+                                      ...prev,
+                                      [key]: { progress: 100, originalSize, compressedSize }
+                                    }));
+
                                     // 添加时间戳参数强制刷新图片缓存
                                     const urlWithTimestamp = `${result.url}?t=${Date.now()}`;
                                     setReportData(prev => ({ ...prev!, [key]: { ...pageData, img: urlWithTimestamp } }));
+
+                                    // 2秒后清除进度条
+                                    setTimeout(() => {
+                                      setUploadProgress(prev => ({ ...prev, [key]: null }));
+                                    }, 2000);
                                   }
                                 } catch (err) {
                                   console.error('Upload failed:', err);
+                                  // 清除进度条
+                                  setUploadProgress(prev => ({ ...prev, [key]: null }));
                                 }
                               }}
                             />
                           </label>
                         </div>
+                        {uploadProgress[key] && (
+                          <div className="mt-3 space-y-2">
+                            <div className="flex items-center justify-between text-xs text-gray-500">
+                              <span>
+                                {uploadProgress[key]!.progress < 50 ? '压缩中...' :
+                                 uploadProgress[key]!.progress < 100 ? '上传中...' : '完成 ✓'}
+                              </span>
+                              {uploadProgress[key]!.compressedSize > 0 && (
+                                <span>
+                                  {(uploadProgress[key]!.originalSize / 1024 / 1024).toFixed(2)}MB → {(uploadProgress[key]!.compressedSize / 1024 / 1024).toFixed(2)}MB
+                                </span>
+                              )}
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                              <div
+                                className="bg-blue-500 h-full transition-all duration-300 ease-out"
+                                style={{ width: `${uploadProgress[key]!.progress}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
                         {pageData.img && (
                           <div className="mt-2 relative">
                             <img

@@ -16,6 +16,7 @@ export default function App() {
   const isScrolling = useRef(false);
   const touchYRef = useRef(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isPageTransitioning = useRef(false);
   const totalPages = 14;
 
   // 加载数据
@@ -38,14 +39,41 @@ export default function App() {
   const goToNextPage = () => setCurrentPage(p => Math.min(p + 1, totalPages - 1));
   const goToPrevPage = () => setCurrentPage(p => Math.max(p - 1, 0));
 
+  // 页面切换时重置滚动位置到顶部，并设置过渡标志
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+
+    // 设置过渡标志，防止在图片加载前误判内容高度
+    isPageTransitioning.current = true;
+
+    // 等待图片加载完成（800ms 应该足够大部分图片加载）
+    const timer = setTimeout(() => {
+      isPageTransitioning.current = false;
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [currentPage]);
+
   // 检查是否在滚动边界
   const isAtScrollBoundary = (direction: 'up' | 'down') => {
     const container = scrollContainerRef.current;
     if (!container) return true; // 如果没有容器，允许翻页
 
-    const { scrollTop, scrollHeight, clientHeight } = container;
-    const threshold = 5; // 5px 容差
+    // 如果页面正在过渡（图片加载中），不允许翻页
+    if (isPageTransitioning.current) return false;
 
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    const threshold = 10; // 10px 容差
+
+    // 实时检测内容是否溢出（内容高度 > 可视高度）
+    const isOverflowing = scrollHeight > clientHeight + threshold;
+
+    // 如果内容没有溢出，直接允许翻页
+    if (!isOverflowing) return true;
+
+    // 如果内容溢出，检查是否在边界
     if (direction === 'up') {
       return scrollTop <= threshold; // 在顶部
     } else {
